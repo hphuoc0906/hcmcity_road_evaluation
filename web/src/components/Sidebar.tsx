@@ -1,4 +1,4 @@
-import { cssRamp, formatSeconds } from '../lib/color';
+import { cssRamp, formatSeconds, type Theme } from '../lib/color';
 import type { Meta, RemovalStep, TopRoad } from '../lib/data';
 
 type Tab = 'roads' | 'removals' | 'speed';
@@ -19,6 +19,8 @@ interface Props {
   selectedRank: number | null;
   onSelect: (rank: number | null) => void;
   onFlyToRoad: (road: TopRoad) => void;
+  theme: Theme;
+  onToggleTheme: () => void;
 }
 
 export function Sidebar({
@@ -37,10 +39,20 @@ export function Sidebar({
   selectedRank,
   onSelect,
   onFlyToRoad,
+  theme,
+  onToggleTheme,
 }: Props) {
   return (
     <aside className="sidebar">
       <header className="sidebar-head">
+        <button
+          className="theme-toggle"
+          onClick={onToggleTheme}
+          title={theme === 'dark' ? 'Switch to light map' : 'Switch to dark map'}
+          aria-label={theme === 'dark' ? 'Switch to light map' : 'Switch to dark map'}
+        >
+          {theme === 'dark' ? <SunIcon /> : <MoonIcon />}
+        </button>
         <h1>Ho Chi Minh City road network</h1>
         <p className="sub">
           Criticality and vulnerability across {meta.edgeCount.toLocaleString()} segments,
@@ -54,7 +66,7 @@ export function Sidebar({
           checked={showTop}
           onChange={onToggleTop}
           label={`Top ${meta.topCount.toLocaleString()} by betweenness`}
-          swatch={<Gradient />}
+          swatch={<Gradient theme={theme} />}
         />
         <Toggle
           checked={showFull}
@@ -71,7 +83,12 @@ export function Sidebar({
           checked={showRemovals}
           onChange={onToggleRemovals}
           label={`Removed streets (${meta.removalCount})`}
-          swatch={<span className="swatch" style={{ background: 'rgb(255,92,42)' }} />}
+          swatch={
+            <span
+              className="swatch"
+              style={{ background: theme === 'dark' ? 'rgb(255,92,42)' : 'rgb(214,58,12)' }}
+            />
+          }
         />
       </section>
 
@@ -96,9 +113,14 @@ export function Sidebar({
       </nav>
 
       <div className="panel">
-        {tab === 'roads' && <RoadTable meta={meta} onFlyToRoad={onFlyToRoad} />}
+        {tab === 'roads' && <RoadTable meta={meta} onFlyToRoad={onFlyToRoad} theme={theme} />}
         {tab === 'removals' && (
-          <RemovalTable removals={removals} selectedRank={selectedRank} onSelect={onSelect} />
+          <RemovalTable
+            removals={removals}
+            selectedRank={selectedRank}
+            onSelect={onSelect}
+            theme={theme}
+          />
         )}
         {tab === 'speed' && <SpeedTable meta={meta} />}
       </div>
@@ -111,7 +133,15 @@ export function Sidebar({
   );
 }
 
-function RoadTable({ meta, onFlyToRoad }: { meta: Meta; onFlyToRoad: Props['onFlyToRoad'] }) {
+function RoadTable({
+  meta,
+  onFlyToRoad,
+  theme,
+}: {
+  meta: Meta;
+  onFlyToRoad: Props['onFlyToRoad'];
+  theme: Theme;
+}) {
   const max = meta.topRoads[0]?.betweenness ?? 1;
   return (
     <>
@@ -129,7 +159,7 @@ function RoadTable({ meta, onFlyToRoad }: { meta: Meta; onFlyToRoad: Props['onFl
                 <span
                   style={{
                     width: `${(road.betweenness / max) * 100}%`,
-                    background: cssRamp(road.betweenness / max),
+                    background: cssRamp(road.betweenness / max, theme),
                   }}
                 />
               </span>
@@ -145,10 +175,12 @@ function RemovalTable({
   removals,
   selectedRank,
   onSelect,
+  theme,
 }: {
   removals: RemovalStep[];
   selectedRank: number | null;
   onSelect: Props['onSelect'];
+  theme: Theme;
 }) {
   const ranked = [...removals].sort((a, b) => b.deltaCost - a.deltaCost);
   const max = ranked[0]?.deltaCost ?? 1;
@@ -172,7 +204,7 @@ function RemovalTable({
                 <span
                   style={{
                     width: `${Math.max((step.deltaCost / max) * 100, 1.5)}%`,
-                    background: 'rgb(255,92,42)',
+                    background: theme === 'dark' ? 'rgb(255,92,42)' : 'rgb(214,58,12)',
                   }}
                 />
               </span>
@@ -262,7 +294,24 @@ function Toggle({
   );
 }
 
-function Gradient() {
-  const stops = Array.from({ length: 6 }, (_, i) => cssRamp(i / 5)).join(', ');
+function Gradient({ theme }: { theme: Theme }) {
+  const stops = Array.from({ length: 6 }, (_, i) => cssRamp(i / 5, theme)).join(', ');
   return <span className="swatch" style={{ background: `linear-gradient(90deg, ${stops})` }} />;
+}
+
+function SunIcon() {
+  return (
+    <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+      <circle cx="12" cy="12" r="4" />
+      <path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" />
+    </svg>
+  );
+}
+
+function MoonIcon() {
+  return (
+    <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z" />
+    </svg>
+  );
 }

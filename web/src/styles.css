@@ -7,8 +7,26 @@
   --muted: #9aa6bd;
   --accent: #4fd1c5;
   --removed: rgb(255, 92, 42);
+  --hover: rgba(255, 255, 255, 0.06);
+  --track: rgba(255, 255, 255, 0.07);
+  --shadow: 0 18px 48px rgba(0, 0, 0, 0.55);
   --radius: 12px;
   color-scheme: dark;
+}
+
+:root[data-theme='light'] {
+  --bg: #eef1f5;
+  --panel: rgba(255, 255, 255, 0.92);
+  --panel-solid: #ffffff;
+  --border: rgba(16, 26, 40, 0.13);
+  --text: #16202e;
+  --muted: #5b6b82;
+  --accent: #0b7285;
+  --removed: rgb(214, 58, 12);
+  --hover: rgba(16, 26, 40, 0.055);
+  --track: rgba(16, 26, 40, 0.08);
+  --shadow: 0 14px 38px rgba(16, 26, 40, 0.16);
+  color-scheme: light;
 }
 
 * {
@@ -55,13 +73,38 @@ body {
   backdrop-filter: blur(14px);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.55);
+  box-shadow: var(--shadow);
   overflow: hidden;
 }
 
 .sidebar-head {
-  padding: 18px 18px 14px;
+  position: relative;
+  padding: 18px 46px 14px 18px;
   border-bottom: 1px solid var(--border);
+}
+
+.theme-toggle {
+  position: absolute;
+  top: 14px;
+  right: 12px;
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: none;
+  color: var(--muted);
+  cursor: pointer;
+  transition:
+    color 0.12s,
+    background 0.12s;
+}
+
+.theme-toggle:hover {
+  color: var(--text);
+  background: var(--hover);
 }
 
 .sidebar-head h1 {
@@ -207,12 +250,12 @@ body {
 }
 
 .row:hover {
-  background: rgba(255, 255, 255, 0.06);
+  background: var(--hover);
 }
 
 .row.selected {
-  background: rgba(255, 92, 42, 0.16);
-  box-shadow: inset 0 0 0 1px rgba(255, 92, 42, 0.45);
+  background: color-mix(in srgb, var(--removed) 16%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--removed) 48%, transparent);
 }
 
 .rank {
@@ -242,7 +285,7 @@ body {
   display: block;
   height: 3px;
   border-radius: 2px;
-  background: rgba(255, 255, 255, 0.07);
+  background: var(--track);
   overflow: hidden;
 }
 
@@ -325,7 +368,7 @@ body {
 }
 
 .reset-view:hover {
-  background: rgba(30, 38, 54, 0.94);
+  background: var(--panel-solid);
 }
 
 .panel-handle {
@@ -360,7 +403,7 @@ body {
 .spinner {
   width: 26px;
   height: 26px;
-  border: 2px solid rgba(255, 255, 255, 0.14);
+  border: 2px solid var(--track);
   border-top-color: var(--accent);
   border-radius: 50%;
   animation: spin 0.8s linear infinite;

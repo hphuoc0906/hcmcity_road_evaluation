@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import type { MapViewState } from '@deck.gl/core';
 
+import type { Theme } from './lib/color';
 import { INITIAL_VIEW, MapView } from './components/MapView';
 import { Sidebar } from './components/Sidebar';
 import {
@@ -15,6 +16,24 @@ import {
 } from './lib/data';
 
 type Tab = 'roads' | 'removals' | 'speed';
+
+const THEME_KEY = 'roadnet-theme';
+
+/**
+ * Light by default, and deliberately not tied to the OS setting: a first-time
+ * visitor on a dark-mode machine would otherwise land on the dark map with no
+ * hint that the toggle exists. A remembered choice always wins.
+ * Storage throws in private windows, so the read is guarded.
+ */
+function initialTheme(): Theme {
+  try {
+    const saved = localStorage.getItem(THEME_KEY);
+    if (saved === 'light' || saved === 'dark') return saved;
+  } catch {
+    // ignore: fall back to the default
+  }
+  return 'light';
+}
 
 export default function App() {
   const [meta, setMeta] = useState<Meta | null>(null);
@@ -31,6 +50,20 @@ export default function App() {
   const [selectedRank, setSelectedRank] = useState<number | null>(null);
   const [viewState, setViewState] = useState<MapViewState>(INITIAL_VIEW);
   const [panelOpen, setPanelOpen] = useState(false);
+  const [theme, setTheme] = useState<Theme>(initialTheme);
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+    try {
+      localStorage.setItem(THEME_KEY, theme);
+    } catch {
+      // ignore: the toggle still works for this session
+    }
+  }, [theme]);
+
+  const toggleTheme = useCallback(() => {
+    setTheme((current) => (current === 'dark' ? 'light' : 'dark'));
+  }, []);
 
   useEffect(() => {
     (async () => {
@@ -129,6 +162,7 @@ export default function App() {
         showRemovals={showRemovals}
         selectedRank={selectedRank}
         onSelect={selectRemoval}
+        theme={theme}
       />
 
       <Sidebar
@@ -147,6 +181,8 @@ export default function App() {
         selectedRank={selectedRank}
         onSelect={selectRemoval}
         onFlyToRoad={flyToRoad}
+        theme={theme}
+        onToggleTheme={toggleTheme}
       />
 
       <button

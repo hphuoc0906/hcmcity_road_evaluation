@@ -6,10 +6,13 @@ import type { MapViewState } from '@deck.gl/core';
 import 'maplibre-gl/dist/maplibre-gl.css';
 
 import type { EdgeTier, RemovalStep } from '../lib/data';
-import { HIGHLIGHT_RGB, REMOVED_RGB, buildColorBuffer, logScale } from '../lib/color';
+import { HIGHLIGHT_RGB, REMOVED_RGB, buildColorBuffer, logScale, type Theme } from '../lib/color';
 
 /** CARTO's public basemap styles need no API key, which keeps the deploy free. */
-const BASEMAP = 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json';
+const BASEMAP: Record<Theme, string> = {
+  dark: 'https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json',
+  light: 'https://basemaps.cartocdn.com/gl/positron-gl-style/style.json',
+};
 
 export const INITIAL_VIEW: MapViewState = {
   longitude: 106.7,
@@ -37,6 +40,7 @@ interface Props {
   showRemovals: boolean;
   selectedRank: number | null;
   onSelect: (rank: number | null) => void;
+  theme: Theme;
 }
 
 export function MapView({
@@ -51,28 +55,31 @@ export function MapView({
   showRemovals,
   selectedRank,
   onSelect,
+  theme,
 }: Props) {
-  // Colour buffers are derived once per tier; rebuilding 1.2M RGBA values on
-  // every render would drop frames while panning.
-  // The background tier is context, not the message: it stays in the cool, dark
-  // half of the ramp so the scored top tier drawn over it still reads clearly.
+  // Colour buffers are derived once per tier and theme; rebuilding 1.2M RGBA
+  // values on every render would drop frames while panning.
+  // The background tier is context, not the message: it stays in the low half of
+  // the ramp so the scored top tier drawn over it still reads clearly. On the
+  // pale basemap it also needs more opacity to survive against white.
   const fullColors = useMemo(
     () =>
       fullTier
         ? buildColorBuffer(
             fullTier.values,
             (rank) => rank * 0.42,
-            (t) => 30 + t * 120,
+            theme === 'dark' ? (t) => 30 + t * 120 : (t) => 45 + t * 130,
+            theme,
           )
         : null,
-    [fullTier],
+    [fullTier, theme],
   );
 
   const topColors = useMemo(() => {
     if (!topTier) return null;
     const scale = logScale(maxBetweenness);
-    return buildColorBuffer(topTier.values, scale, (t) => 110 + t * 145);
-  }, [topTier, maxBetweenness]);
+    return buildColorBuffer(topTier.values, scale, (t) => 110 + t * 145, theme);
+  }, [topTier, maxBetweenness, theme]);
 
   const removalSegments = useMemo<RemovalSegment[]>(
     () =>
@@ -127,13 +134,14 @@ export function MapView({
           data: removalSegments,
           getSourcePosition: (d) => d.source,
           getTargetPosition: (d) => d.target,
-          getColor: (d) => (d.step.rank === selectedRank ? HIGHLIGHT_RGB : REMOVED_RGB),
+          getColor: (d) =>
+            d.step.rank === selectedRank ? HIGHLIGHT_RGB[theme] : REMOVED_RGB[theme],
           getWidth: (d) => (d.step.rank === selectedRank ? 9 : 5),
           widthMinPixels: 2.5,
           widthMaxPixels: 14,
           pickable: true,
           onClick: (info) => onSelect(info.object ? info.object.step.rank : null),
-          updateTriggers: { getColor: selectedRank, getWidth: selectedRank },
+          updateTriggers: { getColor: [selectedRank, theme], getWidth: selectedRank },
         })
       : null,
   ].filter(Boolean);
@@ -153,18 +161,22 @@ export function MapView({
                  Extra travel cost: ${step.deltaCost.toFixed(0)} m<br/>
                  ${step.edgeCount} segment${step.edgeCount === 1 ? '' : 's'} removed`,
           style: {
-            background: 'rgba(12, 16, 24, 0.94)',
-            color: '#e8ecf4',
+            background: theme === 'dark' ? 'rgba(12, 16, 24, 0.94)' : 'rgba(255, 255, 255, 0.97)',
+            color: theme === 'dark' ? '#e8ecf4' : '#16202e',
             fontSize: '12px',
             padding: '8px 10px',
             borderRadius: '6px',
-            border: '1px solid rgba(255,255,255,0.14)',
+            border:
+              theme === 'dark'
+                ? '1px solid rgba(255,255,255,0.14)'
+                : '1px solid rgba(16,26,40,0.18)',
+            boxShadow: theme === 'dark' ? 'none' : '0 6px 20px rgba(16,26,40,0.14)',
             maxWidth: '240px',
           },
         };
       }}
     >
-      <Map reuseMaps mapStyle={BASEMAP} />
+      <Map reuseMaps mapStyle={BASEMAP[theme]} />
     </DeckGL>
   );
 }
