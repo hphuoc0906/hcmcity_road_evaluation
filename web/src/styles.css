@@ -375,6 +375,48 @@ body {
   display: none;
 }
 
+.map-fallback {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: var(--bg);
+}
+
+.map-fallback-card {
+  max-width: 420px;
+  margin-left: 200px;
+  padding: 22px 24px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--panel-solid);
+  box-shadow: var(--shadow);
+}
+
+.map-fallback-card h2 {
+  margin: 0 0 10px;
+  font-size: 15px;
+}
+
+.map-fallback-card p {
+  margin: 0 0 10px;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--muted);
+}
+
+.map-fallback-card code {
+  color: var(--accent);
+  font-size: 12px;
+}
+
+@media (max-width: 720px) {
+  .map-fallback-card {
+    margin-left: 0;
+  }
+}
+
 /* ------------------------------------------------------------------ loading */
 
 .fullscreen-message {

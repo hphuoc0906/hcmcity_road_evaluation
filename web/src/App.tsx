@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import type { MapViewState } from '@deck.gl/core';
 
 import type { Theme } from './lib/color';
+import { hasWebGL } from './lib/webgl';
 import { INITIAL_VIEW, MapView } from './components/MapView';
 import { Sidebar } from './components/Sidebar';
 import {
@@ -36,6 +37,8 @@ function initialTheme(): Theme {
 }
 
 export default function App() {
+  // Checked once: a lost context will not come back without a reload.
+  const [webglOk] = useState(hasWebGL);
   const [meta, setMeta] = useState<Meta | null>(null);
   const [removals, setRemovals] = useState<RemovalStep[]>([]);
   const [topTier, setTopTier] = useState<EdgeTier | null>(null);
@@ -150,20 +153,24 @@ export default function App() {
 
   return (
     <div className={panelOpen ? 'layout panel-open' : 'layout'}>
-      <MapView
-        viewState={viewState}
-        onViewStateChange={setViewState}
-        topTier={topTier}
-        fullTier={fullTier}
-        removals={removals}
-        maxBetweenness={meta.betweenness.max}
-        showFull={showFull}
-        showTop={showTop}
-        showRemovals={showRemovals}
-        selectedRank={selectedRank}
-        onSelect={selectRemoval}
-        theme={theme}
-      />
+      {webglOk ? (
+        <MapView
+          viewState={viewState}
+          onViewStateChange={setViewState}
+          topTier={topTier}
+          fullTier={fullTier}
+          removals={removals}
+          maxBetweenness={meta.betweenness.max}
+          showFull={showFull}
+          showTop={showTop}
+          showRemovals={showRemovals}
+          selectedRank={selectedRank}
+          onSelect={selectRemoval}
+          theme={theme}
+        />
+      ) : (
+        <WebGLNotice />
+      )}
 
       <Sidebar
         meta={meta}
@@ -193,15 +200,37 @@ export default function App() {
         {panelOpen ? 'Hide details' : 'Show details'}
       </button>
 
-      <button
-        className="reset-view"
-        onClick={() => {
-          setViewState(INITIAL_VIEW);
-          setSelectedRank(null);
-        }}
-      >
-        Reset view
-      </button>
+      {webglOk && (
+        <button
+          className="reset-view"
+          onClick={() => {
+            setViewState(INITIAL_VIEW);
+            setSelectedRank(null);
+          }}
+        >
+          Reset view
+        </button>
+      )}
+    </div>
+  );
+}
+
+function WebGLNotice() {
+  return (
+    <div className="map-fallback">
+      <div className="map-fallback-card">
+        <h2>The map needs WebGL</h2>
+        <p>
+          Your browser could not create a WebGL context, so the 1.2 million road segments
+          cannot be drawn. The rankings and benchmark tables on the left still work.
+        </p>
+        <p className="note">
+          In Chrome or Edge, turn on <strong>Settings → System → Use graphics acceleration
+          when available</strong> and restart the browser. Visit <code>chrome://gpu</code> to
+          see why it is off — a blocklisted driver, a remote desktop session or an enterprise
+          policy are the usual reasons.
+        </p>
+      </div>
     </div>
   );
 }
