@@ -1,0 +1,28 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+dist/
+build/
+.pytest_cache/
+.ruff_cache/
+
+# Local analysis artefacts (web/public/data is committed — it is the deployed payload)
+.cache/
+/data/
+*.osm.pbf
+*.poly
+*.pkl
+
+# Node / web
+node_modules/
+web/dist/
+*.tsbuildinfo
+.vercel/
+
+# Editors & OS
+.DS_Store
+.idea/
+.vscode/
